@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大明升官記 - 兩百七十六年史詩編年版 (修復AI事件)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Serif TC', serif;
+            background-color: #f5f0e6;
+            background-image: radial-gradient(#dfd4bf 1px, transparent 0), radial-gradient(#dfd4bf 1px, transparent 0);
+            background-size: 24px 24px;
+            background-position: 0 0, 12px 12px;
+        }
+        .wood-border {
+            border: 4px solid #5c2c16;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), inset 0 2px 4px 0 rgba(255, 255, 255, 0.15);
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1ebd9; }
+        ::-webkit-scrollbar-thumb { background: #8c2720; border-radius: 3px; }
+        
+        /* 嚴世蕃 專屬對話氣泡樣式 */
+        .speech-bubble {
+            position: absolute; 
+            background: #ffffff; 
+            border: 2px solid #1e3a8a; 
+            border-radius: 8px;
+            padding: 8px 12px; 
+            font-size: 13px; 
+            font-weight: 900; 
+            color: #1e3a8a;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); 
+            z-index: 50; 
+            opacity: 0;
+            transform: scale(0.8) translateY(10px); 
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            pointer-events: none;
+            width: 180px;
+            text-align: center;
+        }
+        .speech-bubble.show { 
+            opacity: 1; 
+            transform: scale(1) translateY(0); 
+        }
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 30px;
+            border-width: 10px 10px 0;
+            border-style: solid;
+            border-color: #ffffff transparent;
+            display: block;
+            width: 0;
+        }
+        .speech-bubble::before {
+            content: '';
+            position: absolute;
+            bottom: -12px;
+            left: 29px;
+            border-width: 11px 11px 0;
+            border-style: solid;
+            border-color: #1e3a8a transparent;
+            display: block;
+            width: 0;
+            z-index: -1;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-between p-2 md:p-4 text-stone-900 select-none overflow-x-hidden">
+
+    <header class="w-full max-w-4xl text-center mb-2 flex flex-col items-center relative">
+        <h1 class="text-3xl md:text-5xl font-black text-red-900 drop-shadow-md tracking-widest border-b-2 border-red-900 pb-1">大明升官圖</h1>
+        <div class="flex gap-2 items-center mt-2">
+            <p id="era-display" class="text-sm md:text-base font-bold text-amber-800 bg-amber-100 px-4 py-1 rounded-full border border-amber-300">【洪武年間】</p>
+            <p id="timeline-progress" class="text-xs text-stone-600 bg-stone-200 px-3 py-1 rounded-full border border-stone-300">歷史進度: 1 / 35</p>
+        </div>
+    </header>
+
+    <main class="w-full max-w-4xl flex-1 flex flex-col items-center justify-center">
+        
+        <!-- 開局畫面 -->
+        <div id="start-screen" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+            <div class="bg-[#faf6eb] w-full max-w-xl rounded-xl wood-border p-6 text-center max-h-[90vh] overflow-y-auto">
+                <h2 class="text-2xl md:text-3xl font-bold text-red-900 mb-2">請選擇閣下出身</h2>
+                <p class="text-stone-600 text-sm mb-6">從洪武開國到崇禎煤山，您將完整經歷大明兩百七十六年風雨與十六代帝王。</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <button onclick="startGame('scholar')" class="bg-amber-100/50 hover:bg-amber-200 border-2 border-emerald-800 rounded-lg p-4 transition-all hover:scale-105 text-left flex flex-col justify-between">
+                        <div><span class="bg-emerald-800 text-white text-xs px-2 py-0.5 rounded">才氣</span><h3 class="text-lg font-bold text-emerald-900 mt-2">江南才子</h3></div>
+                        <div class="mt-4 text-xs font-bold border-t border-emerald-800/20 pt-2 w-full">起點：秀才<br>名望：+20<br>銀兩：50<br><span class="text-red-800">✨ 易轉中「才」</span></div>
+                    </button>
+                    <button onclick="startGame('noble')" class="bg-amber-100/50 hover:bg-amber-200 border-2 border-red-800 rounded-lg p-4 transition-all hover:scale-105 text-left flex flex-col justify-between">
+                        <div><span class="bg-red-800 text-white text-xs px-2 py-0.5 rounded">權貴</span><h3 class="text-lg font-bold text-red-900 mt-2">開國功臣</h3></div>
+                        <div class="mt-4 text-xs font-bold border-t border-red-800/20 pt-2 w-full">起點：童生<br>名望：+5<br>銀兩：150<br><span class="text-red-800">✨ 資金雄厚</span></div>
+                    </button>
+                    <button onclick="startGame('poor')" class="bg-amber-100/50 hover:bg-amber-200 border-2 border-amber-800 rounded-lg p-4 transition-all hover:scale-105 text-left flex flex-col justify-between">
+                        <div><span class="bg-amber-800 text-white text-xs px-2 py-0.5 rounded">堅毅</span><h3 class="text-lg font-bold text-amber-950 mt-2">寒門學子</h3></div>
+                        <div class="mt-4 text-xs font-bold border-t border-amber-800/20 pt-2 w-full">起點：童生<br>名望：+15<br>銀兩：20<br><span class="text-red-800">✨ 遭「贓」降職減半</span></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-full flex flex-col lg:flex-row gap-4 justify-center items-stretch my-2">
+            
+            <!-- 棋盤區 -->
+            <div class="w-full max-w-[480px] aspect-square bg-[#f0e8d5] rounded-xl p-2 md:p-3 wood-border relative self-center shadow-xl">
+                <div class="grid grid-cols-5 grid-rows-5 gap-1.5 h-full w-full">
+                    <!-- 16個官位節點 -->
+                    <div id="tile-0" class="row-start-1 col-start-1 bg-amber-50 border border-stone-400 rounded p-1 flex flex-col justify-between text-center relative overflow-hidden"><span class="text-[10px] text-stone-500 font-bold">未入流</span><span class="text-xs md:text-sm font-black text-stone-800">童生</span><div class="flex justify-center gap-1 tokens-container min-h-[16px]"></div></div>
+                    <div id="tile-1" class="row-start-1 col-start-2 bg-amber-50 border border-stone-400 rounded p-1 flex flex-col justify-between text-center relative overflow-hidden"><span class="text-[10px] text-stone-500 font-bold">未入流</span><span class="text-xs md:text-sm font-black text-stone-800">秀才</span><div class="flex justify-center gap-1 tokens-container min-h-[16px]"></div></div>
+                    <div id="tile-2" class="row-start-1 col-start-3 bg-amber-100 border border-amber-600 rounded p-1 flex flex-col justify-between text-center relative overflow-hidden"><span class="text-[10px] text-amber-700 font-bold">資格</span><span class="text-xs md:text-sm font-black text-amber-900">舉人</span><div class="flex justify-center gap-1 tokens-container min-h-[16px]"></div></div>
+                    <div id="tile-3" class="row-start-1 col-start-4 bg-yellow-50 border border-amber-600 rounded p-1 flex flex-col justify-between text-center relative overflow-hidden"><span class="text-[10px] text-amber-700 font-bold">天子門生</span><span class="text-xs md:text-sm font-black text-amber-900">進士</span><div class="flex justify-center gap-1 tokens-container min-h-[16px]"></div></div>
+                    <div id="tile-4" class="row-start-1 col-start-5 bg-emerald-50 border border-emerald-600 rounded p-1 flex flex-col justify-between text-center relative overflow-hidden"><span class="text-[10px] text-emerald-800 font-bold">從七品</span><span class="text-xs md:text-sm font-black text-emerald-900">翰林編修</span><div class="flex justify-center gap-1 tokens-container min-h-[16px]"></div></div>
+                    <div id="tile-5" class="row-start-2 col-start-5 bg-emerald-50 border border-emerald-600 rounded p-1 flex flex-col justify-between text-center relative overflow-hidden"><span class="text-[10px] text-emerald-800 font-bold">正七品</span><span class="text-xs md:text-sm font-black text-emerald-900">知縣</span><div class="flex justify-center gap-1 tokens-container min-h-[16px]"></div></div>
+                    <div id="tile-6" class="row-start-3 col-start-5 bg-emerald-100 border border-emerald-700 rounded p-1 flex flex-col justify-between text-center relative overflow-hidden"><span class="text-[10px] text-emerald-900 font-bold">正七品</span><span class="text-xs md:text-sm font-black text-emerald-900">御史</span><div class="flex justify-center gap-1 tokens-container min-h-[16px]"></div></div>
+                    <div id="tile-7" class="row-start-4 col-start-5 bg-blue-50 border border-blue-600 rounded p-1 flex flex-col justify-between text-center relative overflow-hidden"><span class="text-[10px] text-blue-800 font-bold">正五品</span><span class="text-xs md:text-sm font-black text-blue-950">知府</span><div class="flex justify-center gap-1 tokens-container min-h-[16px]"></div></div>
+                    <div id="tile-8" class="row-start-5 col-start-5 bg-red-50 border border-red-600 rounded p-1 flex flex-col justify-between text-center relative overflow-hidden"><span class="text-[10px] text-red-800 font-bold">正三品</span><span class="text-xs md:text-sm font-black text-red-950">按察使</span><div class="flex justify-center gap-1 tokens-container min-h-[16px]"></div></div>
+                    <div id="tile-9" class="row-start-5 col-start-4 bg-red-50 border border-red-600 rounded p-1 flex flex-col justify-between text-center relative overflow-hidden"><span class="text-[10px] text-red-800 font-bold">從二品</span><span class="text-xs md:text-sm font-black text-red-950">布政使</span><div class="flex justify-center gap-1 tokens-container min-h-[16px]"></div></div>
+                    <div id="tile-10" class="row-start-5 col-start-3 bg-red-100 border border-red-700 rounded p-1 flex flex-col justify-between text-center relative overflow-hidden"><span class="text-[10px] text-red-900 font-bold">正三品</span><span class="text-xs md:text-sm font-black text-red-950">兵部侍郎</span><div class="flex justify-center gap-1 tokens-container min-h-[16px]"></div></div>
+                    <div id="tile-11" class="row-start-5 col-start-2 bg-rose-200 border-2 border-red-900 rounded p-1 flex flex-col justify-between text-center relative overflow-hidden"><span class="text-[10px] text-red-900 font-bold">特務</span><span class="text-xs md:text-sm font-black text-red-950">錦衣衛</span><div class="flex justify-center gap-1 tokens-container min-h-[16px]"></div></div>
+                    <div id="tile-12" class="row-start-5 col-start-1 bg-purple-50 border border-purple-600 rounded p-1 flex flex-col justify-between text-center relative overflow-hidden"><span class="text-[10px] text-purple-800 font-bold">正二品</span><span class="text-xs md:text-sm font-black text-purple-950">吏部尚書</span><div class="flex justify-center gap-1 tokens-container min-h-[16px]"></div></div>
+                    <div id="tile-13" class="row-start-4 col-start-1 bg-fuchsia-200 border-2 border-purple-900 rounded p-1 flex flex-col justify-between text-center relative overflow-hidden"><span class="text-[10px] text-purple-900 font-bold">特務</span><span class="text-xs md:text-sm font-black text-purple-950">東廠提督</span><div class="flex justify-center gap-1 tokens-container min-h-[16px]"></div></div>
+                    <div id="tile-14" class="row-start-3 col-start-1 bg-purple-100 border border-purple-700 rounded p-1 flex flex-col justify-between text-center relative overflow-hidden"><span class="text-[10px] text-purple-900 font-bold">正一品</span><span class="text-xs md:text-sm font-black text-purple-950">大學士</span><div class="flex justify-center gap-1 tokens-container min-h-[16px]"></div></div>
+                    <div id="tile-15" class="row-start-2 col-start-1 bg-amber-200 border-4 border-amber-600 rounded p-1 flex flex-col justify-between text-center relative overflow-hidden animate-pulse"><span class="text-[10px] text-amber-900 font-black">極品</span><span class="text-xs md:text-sm font-black text-amber-950">首輔太師</span><div class="flex justify-center gap-1 tokens-container min-h-[16px]"></div></div>
+
+                    <!-- 陀螺控制區 -->
+                    <div class="row-start-2 row-end-5 col-start-2 col-end-5 bg-[#e8deca] rounded border-2 border-amber-900/30 p-2 flex flex-col items-center justify-between text-center relative overflow-hidden">
+                        <div class="w-full">
+                            <span id="turn-badge" class="px-2 py-0.5 rounded text-xs font-bold bg-red-800 text-white animate-pulse">我的回合</span>
+                            <div id="turn-instruction" class="text-xs font-bold text-stone-700 mt-1">請點擊陀螺決定官場命運</div>
+                        </div>
+                        <div class="relative w-28 h-28 md:w-36 md:h-36 my-1">
+                            <div class="absolute -top-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[14px] border-t-amber-950 z-20"></div>
+                            <div id="spinner-wheel" class="w-full h-full rounded-full border-4 border-amber-950 relative transition-transform duration-[2000ms] ease-out shadow-lg" style="background: conic-gradient(#dc2626 0% 25%, #2563eb 25% 50%, #16a34a 50% 75%, #475569 75% 100%); transform: rotate(0deg);">
+                                <div class="absolute inset-0 flex items-center justify-center font-bold text-white text-base md:text-xl">
+                                    <span class="absolute transform -translate-y-8 md:-translate-y-11 rotate-0">德</span>
+                                    <span class="absolute transform translate-x-8 md:translate-x-11 rotate-[90deg]">贓</span>
+                                    <span class="absolute transform translate-y-8 md:translate-y-11 rotate-[180deg]">功</span>
+                                    <span class="absolute transform -translate-x-8 md:-translate-x-11 rotate-[270deg]">才</span>
+                                </div>
+                                <div class="absolute inset-[35%] bg-amber-950 rounded-full flex items-center justify-center shadow-inner border border-amber-600/30">
+                                    <span class="text-amber-100 text-[10px] md:text-xs">陀螺</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button id="action-btn" onclick="spinSpinner()" class="w-full bg-red-900 hover:bg-red-800 active:scale-95 text-white font-bold py-1.5 px-3 rounded shadow border-b-2 border-red-950 text-sm md:text-base transition-all">轉動陀螺</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右側狀態與日誌 -->
+            <div class="w-full max-w-[360px] flex flex-col gap-3 justify-between relative">
+                <div class="bg-white p-3 rounded-xl border border-amber-200 shadow-md flex-1 flex flex-col justify-between relative">
+                    <div>
+                        <div class="flex justify-between items-center border-b border-stone-200 pb-1.5">
+                            <h3 class="font-bold text-stone-800 text-sm flex items-center gap-1">🏮 朝廷官員檔案</h3>
+                            <button onclick="document.getElementById('dict-modal').classList.remove('hidden')" class="text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold py-1 px-2 rounded border border-amber-300 shadow-sm transition-all">
+                                📜 查閱大明官制
+                            </button>
+                        </div>
+                        <!-- 玩家 -->
+                        <div class="mt-2.5 p-2 bg-red-50/50 rounded border border-red-200 transition-all animate-pulse" id="p1-panel">
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="w-3 h-3 rounded-full bg-red-600 border border-white"></span>
+                                    <span id="p1-name" class="font-bold text-sm text-red-900">我</span>
+                                </div>
+                                <span id="p1-rank" class="text-xs bg-red-800 text-white px-2 py-0.5 rounded font-bold">秀才</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 mt-2 text-xs font-semibold text-stone-700">
+                                <div>💰 銀兩：<span id="p1-money" class="text-amber-700">0</span></div>
+                                <div>🌟 名望：<span id="p1-prestige" class="text-indigo-800">0</span></div>
+                            </div>
+                        </div>
+
+                        <!-- 電腦 (嚴世蕃) -->
+                        <div class="mt-2.5 p-2 bg-blue-50/50 rounded border border-blue-200 relative transition-all" id="p2-panel">
+                            <!-- AI 對話氣泡 -->
+                            <div id="ai-speech" class="speech-bubble -top-[76px] left-[10px] md:left-[40px]"></div>
+
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="w-3 h-3 rounded-full bg-blue-600 border border-white"></span>
+                                    <span id="p2-name" class="font-bold text-sm text-blue-900">嚴世蕃 (政敵)</span>
+                                </div>
+                                <span id="p2-rank" class="text-xs bg-blue-800 text-white px-2 py-0.5 rounded font-bold">童生</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 mt-2 text-xs font-semibold text-stone-700">
+                                <div>💰 銀兩：<span id="p2-money" class="text-amber-700">100</span></div>
+                                <div>🌟 名望：<span id="p2-prestige" class="text-indigo-800">10</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-stone-900 text-amber-100 p-3 rounded-xl border-4 border-stone-800 shadow-md h-44 flex flex-col justify-between">
+                    <div class="text-[11px] font-bold text-amber-400 border-b border-stone-800 pb-1 flex justify-between">
+                        <span>📜 朝廷通報</span><span id="log-count">第 0 回合</span>
+                    </div>
+                    <div id="log" class="flex-1 overflow-y-auto font-mono text-xs my-1 space-y-1 pr-1"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 玩家歷史事件 Modal -->
+    <div id="event-modal" class="fixed inset-0 bg-black/80 z-40 hidden flex items-center justify-center p-4">
+        <div class="bg-[#faf6eb] w-full max-w-lg rounded-xl wood-border p-6 shadow-2xl relative">
+            <div class="absolute top-2 right-2 text-red-900/10 text-6xl font-black pointer-events-none">明</div>
+            <span id="event-era-badge" class="bg-red-800 text-white px-2.5 py-0.5 rounded text-xs font-bold">洪武年間</span>
+            <h3 id="event-title" class="text-xl md:text-2xl font-bold text-red-900 mt-2 mb-3">事件標題</h3>
+            <p id="event-desc" class="text-stone-700 text-sm md:text-base leading-relaxed mb-6 bg-white/50 p-3 rounded border border-amber-900/10">描述</p>
+            <div id="event-choices" class="flex flex-col gap-3"></div>
+        </div>
+    </div>
+
+    <!-- AI 事件情報 Modal (政敵遭遇事件) -->
+    <div id="ai-event-modal" class="fixed inset-0 bg-black/60 z-40 hidden flex items-center justify-center p-4">
+        <div class="bg-[#eef2ff] w-full max-w-md rounded-xl border-4 border-blue-900 p-6 shadow-2xl text-center relative">
+            <span id="ai-event-era-badge" class="bg-blue-800 text-white px-2.5 py-0.5 rounded text-xs font-bold">政敵情報</span>
+            <h3 id="ai-event-title" class="text-lg md:text-xl font-bold text-blue-900 mt-3 mb-2">嚴世蕃遭遇事件</h3>
+            <p id="ai-event-desc" class="text-stone-700 text-sm mb-4">描述</p>
+            <div class="bg-blue-100 p-3 rounded mb-4 text-sm font-bold text-blue-900 border border-blue-200 text-left">
+                嚴世蕃的選擇：<br><span id="ai-event-choice" class="text-red-700 mt-1 block">選擇結果</span>
+            </div>
+            <p id="ai-event-result" class="text-stone-600 text-xs mb-6 min-h-[3rem] h-auto text-left">結果描述</p>
+            <button onclick="closeAIEvent()" class="bg-blue-900 hover:bg-blue-800 text-white font-bold py-2 px-8 rounded shadow active:scale-95 transition-all">繼續</button>
+        </div>
+    </div>
+
+    <!-- 勝負/結局 Modal -->
+    <div id="win-modal" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-[#faf6eb] w-full max-w-md rounded-xl wood-border p-8 text-center shadow-2xl animate-pulse">
+            <div id="win-icon" class="text-6xl mb-4">🏆</div>
+            <h2 id="win-title" class="text-3xl font-black text-red-900 mb-2">結局</h2>
+            <p id="win-desc" class="text-stone-700 text-sm mb-6">結局描述</p>
+            <button onclick="location.reload()" class="bg-amber-800 hover:bg-amber-700 text-white font-bold py-2.5 px-6 rounded-lg">再歷大明</button>
+        </div>
+    </div>
+
+    <!-- 明代官制小辭典 Modal -->
+    <div id="dict-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-[#faf6eb] w-full max-w-2xl rounded-xl wood-border p-6 shadow-2xl relative flex flex-col max-h-[85vh]">
+            <button onclick="document.getElementById('dict-modal').classList.add('hidden')" class="absolute top-4 right-4 w-8 h-8 bg-red-900 text-white rounded-full font-bold hover:bg-red-800">×</button>
+            <h2 class="text-2xl md:text-3xl font-black text-red-900 border-b-2 border-amber-900/30 pb-2 mb-4">大明官制小辭典</h2>
+            <div class="overflow-y-auto pr-2 space-y-4 flex-1">
+                <div class="bg-white/60 p-3 rounded border border-amber-900/10">
+                    <h3 class="font-bold text-stone-800 text-lg"><span class="bg-stone-500 text-white px-1.5 py-0.5 rounded text-sm mr-2">未入流</span>童生、秀才</h3>
+                    <p class="text-sm text-stone-600 mt-1">尚未取得正式官員資格的讀書人。童生是考秀才前的稱呼；秀才是通過院試的生員，享有免除部分差役的特權，但還不能做官。</p>
+                </div>
+                <div class="bg-white/60 p-3 rounded border border-amber-900/10">
+                    <h3 class="font-bold text-amber-900 text-lg"><span class="bg-amber-600 text-white px-1.5 py-0.5 rounded text-sm mr-2">資格</span>舉人、進士</h3>
+                    <p class="text-sm text-stone-600 mt-1">舉人是通過鄉試（省級考試）的考生，具備了做官的「資格」。進士則是通過殿試（皇帝親自考核），被稱為「天子門生」，是明代中後期進入朝廷核心圈的必要條件。</p>
+                </div>
+                <div class="bg-white/60 p-3 rounded border border-amber-900/10">
+                    <h3 class="font-bold text-emerald-900 text-lg"><span class="bg-emerald-700 text-white px-1.5 py-0.5 rounded text-sm mr-2">七品</span>知縣、御史、翰林編修</h3>
+                    <p class="text-sm text-stone-600 mt-1">「知縣」即一縣之長，負責地方政務與司法。「翰林編修」多由進士出身者擔任，負責修史、起草詔書，是未來入閣的儲備人才。「御史」雖品秩不高，但負責監察百官，有「風聞言事」之權，令貪官聞風喪膽。</p>
+                </div>
+                <div class="bg-white/60 p-3 rounded border border-amber-900/10">
+                    <h3 class="font-bold text-blue-900 text-lg"><span class="bg-blue-700 text-white px-1.5 py-0.5 rounded text-sm mr-2">五品</span>知府</h3>
+                    <p class="text-sm text-stone-600 mt-1">「知府」是府（相當於現代的地級市）的最高行政長官，管理轄下數個縣，掌握地方財政、司法與教化大權。</p>
+                </div>
+                <div class="bg-white/60 p-3 rounded border border-amber-900/10">
+                    <h3 class="font-bold text-red-900 text-lg"><span class="bg-red-700 text-white px-1.5 py-0.5 rounded text-sm mr-2">三品至二品</span>按察使、布政使、侍郎</h3>
+                    <p class="text-sm text-stone-600 mt-1">「布政使」與「按察使」分別是一省的最高行政與司法長官（封疆大吏）。「侍郎」則是中央六部（吏戶禮兵刑工）的副長官，握有實權。</p>
+                </div>
+                <div class="bg-white/60 p-3 rounded border border-amber-900/10">
+                    <h3 class="font-bold text-purple-900 text-lg"><span class="bg-purple-700 text-white px-1.5 py-0.5 rounded text-sm mr-2">正二品以上</span>六部尚書、東廠/錦衣衛提督</h3>
+                    <p class="text-sm text-stone-600 mt-1">「尚書」是六部的最高首長，其中「吏部尚書」負責官員考核任免，被稱為天官。「錦衣衛」與「東廠」則是直屬皇帝的特務機構，擁有法外逮捕與審訊的生殺大權。</p>
+                </div>
+                <div class="bg-white/60 p-3 rounded border border-amber-900/10">
+                    <h3 class="font-bold text-amber-600 text-lg"><span class="bg-amber-500 text-white px-1.5 py-0.5 rounded text-sm mr-2">正一品</span>內閣大學士、首輔太師</h3>
+                    <p class="text-sm text-stone-600 mt-1">明代廢除丞相後，皇帝設立「內閣」協助處理政務。大學士擁有「票擬」權（替皇帝起草批示），實際掌握宰相之權。內閣排名第一者稱為「首輔」，位極人臣，若加封「太師」頭銜則為明代文臣的最高榮譽。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 音效系統 ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                const now = audioCtx.currentTime;
+
+                if (type === 'tick') {
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(800, now);
+                    gain.gain.setValueAtTime(0.05, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                    osc.start(now); osc.stop(now + 0.05);
+                } else if (type === 'gong') {
+                    osc.type = 'triangle'; osc.frequency.setValueAtTime(261.63, now); osc.frequency.exponentialRampToValueAtTime(130.81, now + 1);
+                    gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+                    osc.start(now); osc.stop(now + 1.2);
+                } else if (type === 'win') {
+                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(329.63, now); osc.frequency.setValueAtTime(523.25, now + 0.3);
+                    gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                    osc.start(now); osc.stop(now + 0.6);
+                } else if (type === 'lose') {
+                    osc.type = 'square'; osc.frequency.setValueAtTime(150, now); osc.frequency.exponentialRampToValueAtTime(50, now + 0.3);
+                    gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                    osc.start(now); osc.stop(now + 0.4);
+                }
+            } catch (e) {}
+        }
+
+        // --- 官階地圖 ---
+        const tiles = [
+            { id: 0, name: "童生", outcomes: { "德": 3, "才": 1, "功": 0, "贓": 0 }, salary: 5 },
+            { id: 1, name: "秀才", outcomes: { "德": 2, "才": 4, "功": 1, "贓": 0 }, salary: 10 },
+            { id: 2, name: "舉人", outcomes: { "德": 4, "才": 5, "功": 2, "贓": 1 }, salary: 15 },
+            { id: 3, name: "進士", outcomes: { "德": 14, "才": 6, "功": 4, "贓": 2 }, salary: 25 },
+            { id: 4, name: "翰林編修", outcomes: { "德": 6, "才": 7, "功": 5, "贓": 1 }, salary: 30 },
+            { id: 5, name: "知縣", outcomes: { "德": 7, "才": 6, "功": 5, "贓": 0 }, salary: 30 },
+            { id: 6, name: "御史", outcomes: { "德": 10, "才": 8, "功": 6, "贓": 5 }, salary: 40 },
+            { id: 7, name: "知府", outcomes: { "德": 9, "才": 10, "功": 7, "贓": 5 }, salary: 50 },
+            { id: 8, name: "按察使", outcomes: { "德": 9, "才": 12, "功": 8, "贓": 7 }, salary: 60 },
+            { id: 9, name: "布政使", outcomes: { "德": 12, "才": 10, "功": 9, "贓": 8 }, salary: 70 },
+            { id: 10, name: "兵部侍郎", outcomes: { "德": 12, "才": 11, "功": 10, "贓": 7 }, salary: 85 },
+            { id: 11, name: "錦衣衛", outcomes: { "德": 14, "才": 13, "功": 11, "贓": 0 }, salary: 100 },
+            { id: 12, name: "吏部尚書", outcomes: { "德": 14, "才": 15, "功": 12, "贓": 9 }, salary: 120 },
+            { id: 13, name: "東廠提督", outcomes: { "德": 15, "才": 14, "功": 13, "贓": 0 }, salary: 150 },
+            { id: 14, name: "大學士", outcomes: { "德": 15, "才": 15, "功": 14, "贓": 12 }, salary: 180 },
+            { id: 15, name: "首輔太師", outcomes: { "德": 15, "才": 15, "功": 15, "贓": 14 }, salary: 250 }
+        ];
+
+        let players = [];
+        let currentPlayerIndex = 0;
+        let currentRound = 1;
+        let isSpinning = false;
+        let gameEnded = false;
+        let p1Background = "scholar";
+
+        // --- 明代 16 代皇帝史實編年事件庫（共 35 案） ---
+        const timelineEvents = [
+            // 洪武
+            { era: "洪武", id: "hu", title: "【胡惟庸案】", desc: "洪武十三年，丞相胡惟庸謀反伏誅。太祖大興黨獄，錦衣衛正四處緝捕同黨！", choices: [
+                { text: "揭發同僚以求自保（名望 -20，升一級）", resolve: (p) => { p.prestige=Math.max(0,p.prestige-20); p.position=Math.min(15,p.position+1); return "你揭發同僚，太祖提拔你，但士林唾棄你。"; } },
+                { text: "聯名上疏為故交求情（35%機率抄家，否則名望 +40）", resolve: (p) => { if(Math.random()<0.35){ p.position=0; p.money=0; return "太祖震怒，將你打入胡黨！剝奪官職、抄沒家產。"; } else { p.prestige+=40; return "太祖念你忠厚放過你，你因此聲名鵲起。"; } } }
+            ]},
+            { era: "洪武", id: "kongyin", title: "【空印案】", desc: "地方官府攜帶蓋有印章的空白帳冊，太祖定為欺君重罪，下令徹查！", choices: [
+                { text: "主動認罪繳納贖罪銀（罰銀 40 兩）", resolve: (p) => { p.money=Math.max(0,p.money-40); return "你破財免災，逃過殺身之禍。"; } },
+                { text: "上書陳述地方苦衷（降兩級，名望 +50）", resolve: (p) => { p.position=Math.max(0,p.position-2); p.prestige+=50; return "直言惹禍！被太祖連降兩級，但天下清流敬重你。"; } }
+            ]},
+            { era: "洪武", id: "lanyu", title: "【藍玉案】", desc: "大將軍藍玉謀反案發，太祖欲掃清開國勛貴，錦衣衛羅織謀反名冊！", choices: [
+                { text: "自首並切割勛貴姻親（名望 -15，罰俸 20 兩）", resolve: (p) => { p.prestige=Math.max(0,p.prestige-15); p.money=Math.max(0,p.money-20); return "你交出財產自證清白，未被列入清算名單。"; } },
+                { text: "閉門謝客不與武將往來（銀兩 -10，名望 +10）", resolve: (p) => { p.money=Math.max(0,p.money-10); p.prestige+=10; return "你處事謹慎，保全性命，樹立了高潔形象。"; } }
+            ]},
+            // 建文
+            { era: "建文", id: "xiaofan", title: "【建文削藩】", desc: "建文帝厲行削藩，周、湘等諸王相繼被廢，引發燕王不滿。", choices: [
+                { text: "上策劃削奪燕王之策（名望 +20，升一級）", resolve: (p) => { p.prestige+=20; p.position=Math.min(15,p.position+1); return "削藩策深得皇帝賞識，獲得擢升。"; } },
+                { text: "勸諫削藩過急恐生巨變（名望 +30，降一級）", resolve: (p) => { p.prestige+=30; p.position=Math.max(0,p.position-1); return "被嫌動搖軍心而貶職，但眾人稱讚你的遠見。"; } }
+            ]},
+            { era: "建文", id: "jingnan", title: "【靖難之役】", desc: "燕王朱棣起兵反抗，燕軍勢如破竹，直逼金陵！", choices: [
+                { text: "誓死效忠建文朝廷（名望 +60，50%機率貶為童生）", resolve: (p) => { p.prestige+=60; if(Math.random()<0.5){ p.position=0; p.money=10; return "金陵城破！你拒不降燕被抄家，重回童生。"; } return "你死裡逃生，天下儒生皆敬仰你的忠烈！"; } },
+                { text: "上書迎降燕王（銀兩 +100，名望歸零，升一級）", resolve: (p) => { p.money+=100; p.prestige=0; p.position=Math.min(15,p.position+1); return "你迎降朱棣，獲賞財物並升級，但背上叛逆罵名。"; } }
+            ]},
+            // 永樂
+            { era: "永樂", id: "beijing", title: "【永樂遷都】", desc: "成祖決定動用百萬民工，將大明首都自南京遷往北京！", choices: [
+                { text: "積極督建紫禁城（銀兩 +80，名望 -10）", resolve: (p) => { p.money+=80; p.prestige=Math.max(0,p.prestige-10); return "你辦事幹練，從建材採購中獲取了不少油水。"; } },
+                { text: "反對空耗南方民脂民膏（名望 +30，降一級）", resolve: (p) => { p.prestige+=30; p.position=Math.max(0,p.position-1); return "觸怒成祖被貶官，但南方官員視你為代言人。"; } }
+            ]},
+            { era: "永樂", id: "zhenghe", title: "【鄭和下西洋】", desc: "成祖命太監鄭和率領龐大寶船遠航西洋，朝廷廣招隨行文官！", choices: [
+                { text: "自薦隨寶船隊出海（停止行動一回合，銀兩 +150）", resolve: (p) => { p.money+=150; return "隨船隊帶回海外珠寶，成祖重賞 150 兩！"; } },
+                { text: "反對下西洋稱其弊政（名望 +25）", resolve: (p) => { p.prestige+=25; return "堅守儒家務實觀念，在反對派中獲得極高聲望。"; } }
+            ]},
+            { era: "永樂", id: "dadian", title: "【永樂大典】", desc: "成祖命解縉編纂《永樂大典》，蒐集天下秘籍。", choices: [
+                { text: "獻上家傳古籍入典（名望 +40，銀兩 -30）", resolve: (p) => { p.prestige+=40; p.money=Math.max(0,p.money-30); return "獻出珍本，成祖大悅嘉獎，名震士林。"; } },
+                { text: "專心經營衙門政務（銀兩 +30）", resolve: (p) => { p.money+=30; return "未參與盛事，但藉由打理衙門撈得實惠。"; } }
+            ]},
+            // 洪熙
+            { era: "洪熙", id: "pingfan", title: "【平反靖難遺臣】", desc: "仁宗登基，下令平反因靖難之役被誅殺的建文舊臣。", choices: [
+                { text: "親自著手平反冤獄（名望 +40，升一級）", resolve: (p) => { p.prestige+=40; p.position=Math.min(15,p.position+1); return "主持平反極得人心，被破格升官。"; } },
+                { text: "保持沉默怕得罪功臣（銀兩 +40）", resolve: (p) => { p.money+=40; return "小心不表態，獲保守派勳貴暗中饋贈。"; } }
+            ]},
+            // 宣德
+            { era: "宣德", id: "jiaozhi", title: "【棄守交趾】", desc: "交趾（越南）反叛不斷成財政無底洞，宣宗欲撤兵棄守。", choices: [
+                { text: "支持棄守省下歲費（升一級，名望 +20）", resolve: (p) => { p.position=Math.min(15,p.position+1); p.prestige+=20; return "支持戰略收縮政策，獲重用升職。"; } },
+                { text: "反對棄守有失威儀（名望 +30，降一級）", resolve: (p) => { p.prestige+=30; p.position=Math.max(0,p.position-1); return "宣宗不悅將你降職，但武將們十分敬佩你。"; } }
+            ]},
+            { era: "宣德", id: "sanyang", title: "【三楊輔政與宣德爐】", desc: "宮中鑄造名震天下的「宣德爐」，向朝臣賜發。", choices: [
+                { text: "撰寫《宣德爐頌》諂媚（銀兩 +80，名望 -20）", resolve: (p) => { p.money+=80; p.prestige=Math.max(0,p.prestige-20); return "文筆絕佳獲名爐與黃金，但遭同僚譏笑。"; } },
+                { text: "配合三楊整頓賦稅（名望 +35，銀兩 -10）", resolve: (p) => { p.prestige+=35; p.money=Math.max(0,p.money-10); return "協助推行善政，地方吏治整頓，名望提高。"; } }
+            ]},
+            // 正統
+            { era: "正統", id: "luchuan", title: "【麓川之役】", desc: "太監王振力主遠征西南麓川，財政大耗。", choices: [
+                { text: "捐納遠征軍餉（銀兩 -50，升一級）", resolve: (p) => { if(p.money>=50){ p.money-=50; p.position=Math.min(15,p.position+1); return "捐納兵餉獲表彰，破格提拔。"; } return "無錢捐納，遭到冷落。"; } },
+                { text: "直言王振窮兵黷武（名望 +40，降一級）", resolve: (p) => { p.prestige+=40; p.position=Math.max(0,p.position-1); return "得罪王振被貶職，留下了不阿名聲。"; } }
+            ]},
+            { era: "正統", id: "tumu", title: "【土木堡之變】", desc: "瓦剌也先大舉犯境，英宗親征在土木堡遭伏擊被俘！", choices: [
+                { text: "聽從于謙死守北京（名望 +50，升一級）", resolve: (p) => { p.prestige+=50; p.position=Math.min(15,p.position+1); return "北京保衛戰獲勝！立下功勳獲得晉升。"; } },
+                { text: "主張南遷避禍（名望 -40，貶為童生）", resolve: (p) => { p.prestige=Math.max(0,p.prestige-40); p.position=0; return "懦弱言論激怒留守大臣，被查辦貶為童生！"; } }
+            ]},
+            // 景泰
+            { era: "景泰", id: "baowei", title: "【景泰易儲】", desc: "代宗欲廢黜英宗之子，改立己子為太子，賄賂百官求默許。", choices: [
+                { text: "收受賄銀贊同易儲（銀兩 +100，名望 -30）", resolve: (p) => { p.money+=100; p.prestige=Math.max(0,p.prestige-30); return "收下封口費贊同，但清流嗤之以鼻。"; } },
+                { text: "拒絕並稱祖制不可亂（名望 +40，廷杖降一級）", resolve: (p) => { p.prestige+=40; p.position=Math.max(0,p.position-1); return "當堂反對遭廷杖降級，但獲朝野讚譽。"; } }
+            ]},
+            // 天順
+            { era: "天順", id: "duomen", title: "【奪門之變】", desc: "石亨等人發動政變，擁立太上皇英宗復辟！英宗欲處死于謙。", choices: [
+                { text: "依附復辟集團（銀兩 +120，名望 -35，升一級）", resolve: (p) => { p.money+=120; p.prestige=Math.max(0,p.prestige-35); p.position=Math.min(15,p.position+1); return "阿附復辟功臣，撈到油水並升官。"; } },
+                { text: "為于謙鳴冤（名望 +60，貶為童生）", resolve: (p) => { p.prestige+=60; p.position=0; return "英宗大怒！剝奪官服抄家貶為童生。"; } }
+            ]},
+            // 成化
+            { era: "成化", id: "liting", title: "【成化犁庭】", desc: "女真襲擾遼東，憲宗下令「搗其巢穴」，發起毀滅性掃蕩！", choices: [
+                { text: "籌措軍餉支持犁庭（升一級，銀兩 -30）", resolve: (p) => { p.position=Math.min(15,p.position+1); p.money=Math.max(0,p.money-30); return "戰事大捷，後勤有功升官一級。"; } },
+                { text: "反對過度殺戮（名望 +30）", resolve: (p) => { p.prestige+=30; return "體現儒家仁愛思想，在文臣中獲極高聲望。"; } }
+            ]},
+            { era: "成化", id: "xichang", title: "【西廠設立】", desc: "憲宗設立超越東廠的「西廠」，太監汪直權傾朝野。", choices: [
+                { text: "向汪直投誠做暗樁（銀兩 +150，名望歸零，標記閹黨）", resolve: (p) => { p.money+=150; p.prestige=0; p.isEunuch=true; return "成為西廠爪牙賺滿盈，但出賣了靈魂。"; } },
+                { text: "聯名彈劾西廠汪直（名望 +40，50%機率降兩級）", resolve: (p) => { p.prestige+=40; if(Math.random()<0.5){ p.position=Math.max(0,p.position-2); return "汪直瘋狂報復！你被誣陷降兩級。"; } return "皇上免去汪直之職，你大獲全勝。"; } }
+            ]},
+            // 弘治
+            { era: "弘治", id: "jingcha", title: "【弘治京察】", desc: "孝宗親自整頓官場，推行極其嚴格的「京察」大計。", choices: [
+                { text: "憑政績受審（名望 > 25 升一級，否則降一級）", resolve: (p) => { if(p.prestige>25){ p.position=Math.min(15,p.position+1); return "清廉名望遠播，孝宗下旨升官！"; } p.position=Math.max(0,p.position-1); return "名望不足被定為平庸，降職一級。"; } },
+                { text: "向考核主事贈送厚禮（銀兩 -60）", resolve: (p) => { p.money=Math.max(0,p.money-60); return "送禮難起大作用，但保全了現有官位。"; } }
+            ]},
+            // 正德
+            { era: "正德", id: "baofang", title: "【應州大捷與豹房】", desc: "武宗沉迷「豹房」，又自封總兵官親率大軍與蒙古血戰！", choices: [
+                { text: "進獻奇禽異獸入豹房（銀兩 +100，名望 -35）", resolve: (p) => { p.money+=100; p.prestige=Math.max(0,p.prestige-35); return "博得武宗歡心，獲大量財物賞賜。"; } },
+                { text: "痛斥皇帝自降身份做總兵（名望 +45，降一級）", resolve: (p) => { p.prestige+=45; p.position=Math.max(0,p.position-1); return "武宗將你貶職一級，士林讚你剛正不阿。"; } }
+            ]},
+            { era: "正德", id: "ningwang", title: "【寧王之亂】", desc: "寧王起兵謀反。王陽明以極快速度起兵平叛！", choices: [
+                { text: "運送自家存糧做軍餉（銀兩 -40，名望 +40，升一級）", resolve: (p) => { if(p.money>=40){ p.money-=40; p.prestige+=40; p.position=Math.min(15,p.position+1); return "雪中送炭！戰後王陽明保舉你升官。"; } return "無錢出資，錯失良機。"; } },
+                { text: "按兵不動避免牽連（無事發生）", resolve: (p) => { return "明哲保身，直到戰局平息。"; } }
+            ]},
+            // 嘉靖
+            { era: "嘉靖", id: "daliyi", title: "【大禮議事件】", desc: "嘉靖帝欲強行追尊生父為「皇帝」，百官強烈反對！", choices: [
+                { text: "迎合皇帝支持追尊（銀兩 +100，名望 -40，升兩級）", resolve: (p) => { p.money+=100; p.prestige=Math.max(0,p.prestige-40); p.position=Math.min(15,p.position+2); return "投機成功！皇帝破格提拔你連升兩級！"; } },
+                { text: "在左順門前痛哭抗議（名望 +60，挨廷杖降一級）", resolve: (p) => { p.prestige+=60; p.position=Math.max(0,p.position-1); return "遭廷杖打得鮮血淋漓並降級，但名揚天下！"; } }
+            ]},
+            { era: "嘉靖", id: "gengxu", title: "【庚戌之變與抗倭】", desc: "蒙古兵臨北京，倭寇肆虐（南倭北虜）。戚繼光急需軍餉！", choices: [
+                { text: "舉薦戚繼光並義捐軍餉（名望 +40，銀兩 -50）", resolve: (p) => { if(p.money>=50){ p.money-=50; p.prestige+=40; return "戚家軍大捷，朝廷頒發金匾，名望飆升。"; } return "沒有足夠銀兩捐助。"; } },
+                { text: "彈劾戚繼光擁兵自重（名望 -20，升一級）", resolve: (p) => { p.prestige=Math.max(0,p.prestige-20); p.position=Math.min(15,p.position+1); return "迎合多疑朝廷獲微幅拔擢，名聲受損。"; } }
+            ]},
+            { era: "嘉靖", id: "hairui", title: "【海瑞上治安疏】", desc: "海瑞買好棺材上《治安疏》，直斥嘉靖帝修仙誤國！", choices: [
+                { text: "冒死上疏營救海瑞（名望 +80，貶為童生）", resolve: (p) => { p.prestige+=80; p.position=0; return "皇帝欲將你問斬，朝臣力保改貶為童生。"; } },
+                { text: "痛斥海瑞邀名狂徒（升一級，名望 -50）", resolve: (p) => { p.position=Math.min(15,p.position+1); p.prestige=Math.max(0,p.prestige-50); return "皇帝嘉獎忠誠提拔一級，同僚與你斷交。"; } }
+            ]},
+            // 隆慶
+            { era: "隆慶", id: "kaiguan", title: "【隆慶開關】", desc: "穆宗宣布解除海禁，開放對外通商，進入大航海白銀時代！", choices: [
+                { text: "支持開海入股商船（銀兩 +150，名望 -15）", resolve: (p) => { p.money+=150; p.prestige=Math.max(0,p.prestige-15); return "無數白銀流入！賺取巨額財富。"; } },
+                { text: "反對開海堅守祖制（名望 +30）", resolve: (p) => { p.prestige+=30; return "被保守老臣視為大明風骨的守護者。"; } }
+            ]},
+            { era: "隆慶", id: "anda", title: "【俺答封貢】", desc: "穆宗與蒙古俺答汗達成和議，開放邊境茶馬互市！", choices: [
+                { text: "籌辦邊境互市榷場（升一級，名望 +20）", resolve: (p) => { p.position=Math.min(15,p.position+1); p.prestige+=20; return "邊境安定貿易大興，朝廷讚賞你的經世之才。"; } },
+                { text: "痛斥和議向胡虜低頭（名望 -10）", resolve: (p) => { p.prestige=Math.max(0,p.prestige-10); return "舉國慶祝和平之際，你的言論極不合時宜。"; } }
+            ]},
+            // 萬曆
+            { era: "萬曆", id: "zhangjuzheng", title: "【張居正改革】", desc: "首輔張居正推行「一條鞭法」，清丈全國田畝整頓吏治！", choices: [
+                { text: "配合張首輔丈量土地（升一級，名望 +25）", resolve: (p) => { p.position=Math.min(15,p.position+1); p.prestige+=25; return "改革成效顯著，受張首輔賞識拔擢。"; } },
+                { text: "勾結豪強瞞報田畝（銀兩 +150，45%機率降兩級）", resolve: (p) => { p.money+=150; if(Math.random()<0.45){ p.position=Math.max(0,p.position-2); return "考成法下無所遁形！私通豪強被重降兩級！"; } return "瞞天過海，瓜分鉅額黑錢。"; } }
+            ]},
+            { era: "萬曆", id: "guoben", title: "【國本之爭】", desc: "萬曆帝欲廢長立幼，群臣堅持立長子為太子，拉鋸十五年！", choices: [
+                { text: "聯名死諫立長子（名望 +40，罰俸 40 兩）", resolve: (p) => { p.prestige+=40; p.money=Math.max(0,p.money-40); return "遭萬曆帝罰俸，但天下讀書人尊你為君子。"; } },
+                { text: "支持鄭貴妃之子（銀兩 +100，名望歸零，升一級）", resolve: (p) => { p.money+=100; p.prestige=0; p.position=Math.min(15,p.position+1); return "成了諂媚閹豎之流獲賞賜，名望盡毀。"; } }
+            ]},
+            { era: "萬曆", id: "sandazheng", title: "【萬曆三大征】", desc: "日本進犯朝鮮，萬曆帝下旨出兵抗日援朝，耗銀數百萬！", choices: [
+                { text: "毀家紓難捐納軍餉（名望 +50）", resolve: (p) => { if(p.money>=100){ p.money-=100; p.prestige+=50; return "明軍露梁海戰大捷！捐款之舉名震朝野。"; } return "拿不出這麼多銀兩，令人惋惜。"; } },
+                { text: "擔任督糧官隨軍（50%立功升兩級，否則降一級）", resolve: (p) => { if(Math.random()<0.5){ p.position=Math.min(15,p.position+2); return "調度有方！糧草無虞被論功連升兩級。"; } p.position=Math.max(0,p.position-1); return "前線失利損失慘重，被追責降職。"; } }
+            ]},
+            { era: "萬曆", id: "sarhu", title: "【薩爾滸之戰】", desc: "後金努爾哈赤起兵，明朝十萬精銳在薩爾滸遭遇慘烈大敗！", choices: [
+                { text: "捐納支援熊廷弼修防線（名望 +45，銀兩 -80）", resolve: (p) => { if(p.money>=80){ p.money-=80; p.prestige+=45; return "捐助及時遼東得以支撐，天下讚頌愛國心。"; } return "拿不出銀兩對國難無能為力。"; } },
+                { text: "主張退守山海關（名望 -30，降一級）", resolve: (p) => { p.prestige=Math.max(0,p.prestige-30); p.position=Math.max(0,p.position-1); return "棄地言論遭言官彈劾，皇帝將你貶職。"; } }
+            ]},
+            // 泰昌
+            { era: "泰昌", id: "yigong", title: "【移宮案】", desc: "光宗暴斃。寵妃霸佔乾清宮企圖挾持年幼皇長子。朝臣要求移宮！", choices: [
+                { text: "衝入乾清宮強行移宮（名望 +50，升一級）", resolve: (p) => { p.prestige+=50; p.position=Math.min(15,p.position+1); return "立下擁立新帝大功，獲得朝廷晉升！"; } },
+                { text: "作壁上觀不敢得罪（銀兩 +30）", resolve: (p) => { p.money+=30; return "明哲保身，太監暗中送你宮中財物。"; } }
+            ]},
+            // 天啟
+            { era: "天啟", id: "baozha", title: "【王恭廠大爆炸】", desc: "北京火藥庫發生神秘大爆炸死傷數萬，天啟帝罪己賑災。", choices: [
+                { text: "傾盡官銀賑濟災民（名望 +40，銀兩 -40）", resolve: (p) => { if(p.money>=40){ p.money-=40; p.prestige+=40; return "救人無數，全城百姓視你為青天菩薩。"; } return "沒有足夠銀錢賑災。"; } },
+                { text: "宣稱此為天譴閹黨（名望 +30，遭彈劾降一級）", resolve: (p) => { p.prestige+=35; p.position=Math.max(0,p.position-1); return "藉機政治攻擊，被魏忠賢抓住把柄降職。"; } }
+            ]},
+            { era: "天啟", id: "donglin", title: "【東林慘案】", desc: "魏忠賢自稱「九千歲」把持朝政，殘酷殺害東林賢臣！", choices: [
+                { text: "怒斥魏忠賢（名望 +60，被免職貶為童生）", resolve: (p) => { p.prestige+=60; p.position=0; p.money=Math.max(0,p.money-60); return "展現直臣風骨！重傷淪為童生但名滿天下。"; } },
+                { text: "拜入魏忠賢門下建生祠（銀兩 +200，名望歸零，升兩級）", resolve: (p) => { p.money+=200; p.prestige=0; p.position=Math.min(15,p.position+2); p.isEunuch=true; return "魏忠賢大喜賞金升官，但天下人皆唾罵你。"; } }
+            ]},
+            // 崇禎
+            { era: "崇禎", id: "yuanchonghuan", title: "【斬袁崇煥】", desc: "傳言遼東督師袁崇煥通敵。崇禎帝生疑將其下獄準備磔刑！", choices: [
+                { text: "上書死保袁崇煥（名望 +50，降兩級）", resolve: (p) => { p.prestige+=50; p.position=Math.max(0,p.position-2); return "赤膽忠心換來了崇禎帝的懷疑與貶職。"; } },
+                { text: "聯名彈劾袁崇煥通敵（升一級，名望 -35）", resolve: (p) => { p.position=Math.min(15,p.position+1); p.prestige=Math.max(0,p.prestige-35); return "迎合了皇帝猜忌獲升職，天下將領心寒。"; } }
+            ]},
+            { era: "崇禎", id: "chongzhen", title: "【天子查抄逆案】", desc: "崇禎帝下旨抄沒魏忠賢死黨家產，嚴查附逆官員！", choices: [
+                { text: "聽候聖裁", resolve: (p) => { if (p.isEunuch) { p.position = 0; p.money = 0; p.isEunuch = false; return "抄家！被列入名冊滿門抄沒充公，貶為童生！"; } else { p.money += 80; p.prestige += 30; p.position=Math.min(15,p.position+1); return "未附閹黨皇帝大悅，賞贓銀 80 兩並升級！"; } } }
+            ]},
+            { era: "崇禎", id: "licheng", title: "【甲申國難】", desc: "李自成攻破北京。皇帝敲鐘無官員上朝，大明將亡這是最後抉擇！", choices: [
+                { text: "隨崇禎帝殉國自縊煤山（名望 +100）", resolve: (p) => { p.prestige+=100; p.position=0; p.money=0; return "天子死社稷！隨帝自縊成就大明最後忠臣傲骨！"; } },
+                { text: "開城門奉表投降（保留財產，名望歸零）", resolve: (p) => { p.prestige=0; return "向大順朝投降，保住性命財物但淪為貳臣。"; } }
+            ]}
+        ];
+
+        let currentEventIndex = 0;
+
+        // 嚴世蕃 狂妄嘲諷台詞
+        const aiDialogues = {
+            preSpin: [
+                "且看老夫如何隻手遮天！",
+                "哼，首輔之位非我莫屬！",
+                "這大明官場，是我嚴家的天下！",
+                "小子，瞧瞧老夫點石成金的手段！",
+                "朝堂之上，我嚴世蕃才是真宰相！"
+            ],
+            good: [
+                "哈哈，天助我也！皇上果然明察秋毫！",
+                "這點區區俸祿與封賞，老夫還看不上眼。",
+                "順我者昌，逆我者亡！看老夫步步登天！",
+                "在大明，就沒有我嚴世蕃買不通的官位！"
+            ],
+            bad: [
+                "可惡！是哪個不知死活的言官敢參老子？",
+                "晦氣！定是那班自命清高的清流在搞鬼！",
+                "哼，一時運氣不好罷了，你少得意！",
+                "等著瞧，今日貶我一級，改日我抄你滿門！"
+            ]
+        };
+
+        // --- 氣泡對話框觸發 ---
+        function triggerAIChat(type) {
+            const bubble = document.getElementById('ai-speech');
+            let dialoguePool = [];
+            
+            if (type === 'preSpin') {
+                dialoguePool = aiDialogues.preSpin;
+            } else if (type === 'good') {
+                dialoguePool = aiDialogues.good;
+            } else {
+                dialoguePool = aiDialogues.bad;
+            }
+
+            const randomMsg = dialoguePool[Math.floor(Math.random() * dialoguePool.length)];
+            
+            bubble.textContent = randomMsg;
+            bubble.classList.add('show');
+            
+            setTimeout(() => {
+                bubble.classList.remove('show');
+            }, 3500);
+        }
+
+        // --- 啟動遊戲 ---
+        function startGame(bg) {
+            p1Background = bg;
+            players = [
+                { id: 0, name: "我", background: bg, position: bg==='noble'?0:(bg==='scholar'?1:0), money: bg==='noble'?150:(bg==='poor'?20:50), prestige: bg==='scholar'?20:(bg==='poor'?15:5), isEunuch: false, isAI: false },
+                { id: 1, name: "嚴世蕃", background: "ai", position: 0, money: 100, prestige: 10, isEunuch: false, isAI: true }
+            ];
+            currentEventIndex = 0;
+            currentRound = 1;
+            gameEnded = false;
+            
+            document.getElementById('start-screen').classList.add('hidden');
+            updateUI();
+            renderTokens();
+            playSound('gong');
+            
+            document.getElementById('log').innerHTML = '';
+            addLog(`【洪武開國】太祖朱元璋建立大明，閣下自起跑點踏入官場。`);
+            
+            const ev = timelineEvents[currentEventIndex];
+            document.getElementById('era-display').textContent = `【${ev.era}年間】`;
+            document.getElementById('timeline-progress').textContent = `歷史進度: ${currentEventIndex + 1} / ${timelineEvents.length}`;
+        }
+
+        let rotationState = 0;
+        function spinSpinner() {
+            if (isSpinning || gameEnded) return;
+            isSpinning = true;
+            document.getElementById('action-btn').disabled = true;
+
+            const player = players[currentPlayerIndex];
+            
+            if (player.isAI) {
+                triggerAIChat('preSpin');
+            }
+
+            const outcomes = ["德", "贓", "功", "才"];
+            let result = outcomes[Math.floor(Math.random() * outcomes.length)];
+            
+            if (player.id === 0 && player.background === 'scholar' && Math.random() < 0.22) {
+                result = "才";
+            }
+
+            const sectorAngles = { "德": 0, "贓": 270, "功": 180, "才": 90 };
+            rotationState += (5 * 360) + sectorAngles[result] + (Math.random() * 40 - 20);
+            document.getElementById('spinner-wheel').style.transform = `rotate(${rotationState}deg)`;
+
+            let tickCount = 0;
+            const tickInt = setInterval(() => {
+                if (tickCount < 15) { playSound('tick'); tickCount++; } else clearInterval(tickInt);
+            }, 100);
+
+            setTimeout(() => {
+                isSpinning = false; 
+                document.getElementById('action-btn').disabled = false;
+                resolveSpinResult(player, result);
+            }, 2000);
+        }
+
+        function resolveSpinResult(player, result) {
+            const currentTile = tiles[player.position];
+            let nextPos = currentTile.outcomes[result];
+            
+            if (player.id === 0 && player.background === 'poor' && result === '贓' && Math.random() < 0.5) {
+                nextPos = player.position;
+                addLog(`【寒門風骨】經吏部查證無實，免予降職！`);
+            }
+
+            const targetTile = tiles[nextPos];
+            let isGood = nextPos >= player.position && result !== '贓';
+
+            if (player.isAI) {
+                if (isGood) triggerAIChat('good');
+                else triggerAIChat('bad');
+            }
+
+            if (nextPos > player.position) playSound('win');
+            else if (nextPos < player.position) playSound('lose');
+            else playSound('tick');
+
+            if (result === '德') { player.prestige += 15; player.money += targetTile.salary; }
+            else if (result === '才') { player.prestige += 5; player.money += targetTile.salary; }
+            else if (result === '功') { player.money += (targetTile.salary + 10); }
+            else if (result === '贓') { player.prestige = Math.max(0, player.prestige - 15); player.money = Math.max(0, player.money - 30); }
+
+            player.position = nextPos;
+            addLog(`${player.name} 轉出「${result}」，現居【${targetTile.name}】官職。`);
+
+            if (player.position === 15) {
+                player.money += 100;
+                player.prestige += 10;
+                addLog(`👑 ${player.name} 身處【首輔太師】，本回合獲額外俸祿100兩、名望10點！`);
+            }
+
+            if (player.money <= 0 && player.prestige <= 0) {
+                addLog(`⚠️ 驚天巨變！${player.name} 遭御史彈劾，奪職抄家貶為童生！`);
+                player.position = 0; player.money = 10; player.prestige = 5;
+            }
+
+            updateUI(); 
+            renderTokens();
+
+            // ----------------------------------------------------
+            // 修正版：雙方都有 50% 機率推動歷史進度與觸發事件
+            // ----------------------------------------------------
+            let triggerEvent = false;
+            if (currentEventIndex < timelineEvents.length) {
+                 // 不論是玩家或電腦，都有 50% 的機率觸發事件；如果是最後一個事件，強制觸發以免卡死
+                 if (Math.random() < 0.50 || currentEventIndex === timelineEvents.length - 1) {
+                     triggerEvent = true;
+                 }
+            }
+
+            if (triggerEvent && currentEventIndex < timelineEvents.length) {
+                const ev = timelineEvents[currentEventIndex];
+                
+                document.getElementById('era-display').textContent = `【${ev.era}年間】`;
+                document.getElementById('timeline-progress').textContent = `歷史進度: ${currentEventIndex + 1} / ${timelineEvents.length}`;
+
+                if (player.isAI) {
+                    setTimeout(() => triggerAIEvent(player, ev), 1000);
+                } else {
+                    setTimeout(() => showEventModal(player, ev), 800);
+                }
+            } else {
+                if (currentEventIndex >= timelineEvents.length) {
+                    setTimeout(() => checkFinalScore(), 1000);
+                } else {
+                    setTimeout(switchTurn, 1000);
+                }
+            }
+        }
+
+        // --- 玩家歷史事件視窗 ---
+        function showEventModal(player, ev) {
+            playSound('gong');
+            document.getElementById('event-era-badge').textContent = `${ev.era}年間`;
+            document.getElementById('event-title').textContent = ev.title;
+            document.getElementById('event-desc').textContent = ev.desc;
+            const container = document.getElementById('event-choices');
+            container.innerHTML = '';
+            
+            ev.choices.forEach(c => {
+                const btn = document.createElement('button');
+                btn.className = "w-full bg-amber-900 hover:bg-amber-800 text-white font-bold p-3 rounded text-sm text-left transition-all";
+                btn.textContent = c.text;
+                btn.onclick = () => {
+                    const resMsg = c.resolve(player);
+                    addLog(`【${ev.era}朝】抉擇：${c.text.split('（')[0]}`);
+                    addLog(resMsg);
+                    
+                    document.getElementById('event-modal').classList.add('hidden');
+                    updateUI(); 
+                    renderTokens();
+                    
+                    const isLastEvent = (ev.id === 'licheng');
+                    currentEventIndex++; 
+
+                    if (isLastEvent || currentEventIndex >= timelineEvents.length) { 
+                        checkFinalScore(); 
+                        return; 
+                    }
+
+                    switchTurn();
+                };
+                container.appendChild(btn);
+            });
+            document.getElementById('event-modal').classList.remove('hidden');
+        }
+
+        // --- AI 遭遇事件視窗 (政敵情報) ---
+        function triggerAIEvent(aiPlayer, ev) {
+            playSound('gong');
+            const choice = ev.choices[Math.floor(Math.random() * ev.choices.length)];
+            const resultMsg = choice.resolve(aiPlayer);
+
+            document.getElementById('ai-event-era-badge').textContent = `${ev.era}年間`;
+            document.getElementById('ai-event-title').textContent = `${aiPlayer.name} 遭遇 ${ev.title}`;
+            document.getElementById('ai-event-desc').textContent = ev.desc;
+            document.getElementById('ai-event-choice').textContent = choice.text;
+            document.getElementById('ai-event-result').textContent = resultMsg;
+
+            addLog(`【${ev.era}政敵】嚴世蕃捲入了 ${ev.title}`);
+            document.getElementById('ai-event-modal').classList.remove('hidden');
+        }
+
+        function closeAIEvent() {
+            document.getElementById('ai-event-modal').classList.add('hidden');
+            updateUI(); 
+            renderTokens();
+            
+            const ev = timelineEvents[currentEventIndex];
+            const isLastEvent = (ev && ev.id === 'licheng');
+            
+            currentEventIndex++; 
+            
+            if (isLastEvent || currentEventIndex >= timelineEvents.length) {
+                 checkFinalScore();
+                 return;
+            }
+
+            switchTurn();
+        }
+
+        // --- 回合控制與切換 ---
+        function switchTurn() {
+            if(gameEnded) return;
+
+            document.getElementById(`p1-panel`).classList.remove('ring-4', 'ring-amber-500', 'scale-105', 'animate-pulse');
+            document.getElementById(`p2-panel`).classList.remove('ring-4', 'ring-amber-500', 'scale-105', 'animate-pulse');
+            
+            currentPlayerIndex = currentPlayerIndex === 0 ? 1 : 0;
+            if (currentPlayerIndex === 0) currentRound++;
+            
+            document.getElementById(`p${currentPlayerIndex+1}-panel`).classList.add('ring-4', 'ring-amber-500', 'scale-105', 'animate-pulse');
+
+            const badge = document.getElementById('turn-badge');
+            const inst = document.getElementById('turn-instruction');
+            
+            if (currentEventIndex < timelineEvents.length) {
+                 document.getElementById('era-display').textContent = `【${timelineEvents[currentEventIndex].era}年間】`;
+                 document.getElementById('timeline-progress').textContent = `歷史進度: ${currentEventIndex + 1} / ${timelineEvents.length}`;
+            }
+
+            if (currentPlayerIndex === 1) { 
+                badge.textContent = "政敵回合"; 
+                badge.className = "px-2 py-0.5 rounded text-xs font-bold bg-blue-800 text-white animate-pulse";
+                inst.textContent = "嚴世蕃正在暗中謀劃...";
+                
+                document.getElementById('action-btn').disabled = true; 
+                
+                setTimeout(() => {
+                    if(!gameEnded) spinSpinner();
+                }, 1500); 
+
+            } else { 
+                badge.textContent = "我的回合"; 
+                badge.className = "px-2 py-0.5 rounded text-xs font-bold bg-red-800 text-white animate-pulse";
+                inst.textContent = "請點擊陀螺決定官場命運";
+                
+                document.getElementById('action-btn').disabled = false; 
+            }
+            document.getElementById('log-count').textContent = `第 ${currentRound} 回合`;
+        }
+
+        function renderTokens() {
+            for (let i = 0; i < 16; i++) {
+                document.querySelector(`#tile-${i} .tokens-container`).innerHTML = '';
+            }
+            players.forEach(p => {
+                const container = document.querySelector(`#tile-${p.position} .tokens-container`);
+                if (container) {
+                    const token = document.createElement('span');
+                    token.className = `w-5 h-5 rounded-full border border-white text-[10px] font-bold text-white flex items-center justify-center shadow-md transition-all duration-300 ${p.id === 0 ? 'bg-red-600 animate-bounce' : 'bg-blue-600'}`;
+                    token.textContent = p.id === 0 ? '我' : '敵';
+                    container.appendChild(token);
+                }
+            });
+        }
+
+        function updateUI() {
+            players.forEach((p, idx) => {
+                const pre = `p${idx+1}`;
+                document.getElementById(`${pre}-rank`).textContent = tiles[p.position].name;
+                document.getElementById(`${pre}-money`).textContent = p.money;
+                document.getElementById(`${pre}-prestige`).textContent = p.prestige;
+            });
+        }
+
+        function addLog(msg) {
+            const logBox = document.getElementById('log');
+            const div = document.createElement('div');
+            div.innerHTML = `<span class="text-stone-500">[回合${currentRound}]</span> ${msg}`;
+            logBox.prepend(div);
+        }
+
+        // --- 終局計分與勝負結算 ---
+        function checkFinalScore() {
+            if(gameEnded) return;
+            gameEnded = true;
+
+            const p1 = players[0];
+            const p2 = players[1];
+            let winner = null;
+
+            // 綜合實力總積分公式：(官職格數 * 120) + 銀兩存銀 + (名望 * 2)
+            const p1Score = (p1.position * 120) + p1.money + (p1.prestige * 2);
+            const p2Score = (p2.position * 120) + p2.money + (p2.prestige * 2);
+
+            if (p1Score >= p2Score) winner = p1; else winner = p2;
+            showWin(winner, "endgame", p1Score, p2Score);
+        }
+
+        function showWin(winner, type, s1=0, s2=0) {
+            gameEnded = true;
+            document.getElementById('action-btn').disabled = true;
+
+            const modal = document.getElementById('win-modal');
+            const title = document.getElementById('win-title');
+            const desc = document.getElementById('win-desc');
+            const icon = document.getElementById('win-icon');
+
+            if (type === "endgame") {
+                if (winner.id === 0) {
+                    playSound('win'); icon.textContent = "🔥";
+                    title.textContent = "明朝滅亡，亂世稱雄！";
+                    desc.textContent = `北京城破，大明覆滅！經歷大明兩百七十六年沉浮，最終結算：您的朝廷實力與家族底蘊（總分 ${s1}）超越了政敵嚴世蕃（總分 ${s2}），在改朝換代的亡國亂世中保全了宗族，開闢了新的世家傳奇！`;
+                } else {
+                    playSound('lose'); icon.textContent = "🪦";
+                    title.textContent = "國破家亡，身敗名裂！";
+                    desc.textContent = `甲申國難，大明覆滅！最終結算：您的實力總分（${s1}）不敵嚴世蕃（${s2}），在這場跨越十六代帝王的政治長跑中黯然落幕，家族在亂世戰火中消逝。`;
+                }
+            }
+            modal.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
